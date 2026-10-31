@@ -80,6 +80,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Unit tests (detection layer)
+        run: python3 -m unittest discover -s tests -v
+
       - name: Install build deps
         run: |
           sudo apt-get update -qq
