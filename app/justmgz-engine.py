@@ -73,17 +73,24 @@ def chip_name(cpid):
     key = cpid.lower().replace("0x", "").zfill(4)
     return CPID_CHIP.get(key, "")
 
-def parse_serial(text):
+def parse_serial(serial):
+    """سيريال DFU/Recovery يحمل CPID/ECID/SRTG — بلا اقتران ولا خدمة Apple."""
     out = {}
-    for key, pat in (("cpid", r"CPID:\s*(0x)?([0-9A-Fa-f]+)"),
-                     ("ecid", r"ECID:\s*(0x)?([0-9A-Fa-f]+)"),
-                     ("serial", r"Serial:\s*(\S+)"),
-                     ("product", r"Product Type:\s*(\S+)"),
-                     ("ios", r"iOS Version:\s*(\S+)"),
-                     ("name", r"Device Name:\s*(.+)")):
-        m = re.search(pat, text)
-        if m:
-            out[key] = m.group(m.lastindex) if key in ("cpid", "ecid") else m.group(1).strip()
+    if not serial:
+        return out
+    m = re.search(r"CPID:([0-9a-fA-F]{4})", serial)
+    if m:
+        cpid = m.group(1).lower()
+        out["cpid"] = "0x" + cpid
+        out["chip"] = CPID_CHIP.get(cpid, "")
+    m = re.search(r"ECID:([0-9a-fA-F]{6,16})", serial)
+    if m:
+        out["ecid"] = "0x" + m.group(1).lower()
+    m = re.search(r"SRTG:\[([^\]]+)\]", serial)
+    if m:
+        out["srtg"] = m.group(1)
+    out["pwned"] = "PWND" in serial
+    out["serial"] = serial.strip()[:160]
     return out
 
 # ───────────── detection backends (ported from tr4mpass-web v3) ─────────────
